@@ -11,44 +11,55 @@
    Get it from: Firebase Console → Project Settings
    → Your apps → Web app → firebaseConfig
    ──────────────────────────────────────────────────── */
-const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId:         "YOUR_PROJECT",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+// Import the functions you need from the SDKs you need
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCJg3u-gpDASpQp5kTmPWvcu-q9OJHu-Po",
+  authDomain: "kwickr-dabcd.firebaseapp.com",
+  databaseURL: "https://kwickr-dabcd-default-rtdb.firebaseio.com",
+  projectId: "kwickr-dabcd",
+  storageBucket: "kwickr-dabcd.firebasestorage.app",
+  messagingSenderId: "93920320782",
+  appId: "1:93920320782:web:76452c483fde9c60bb4b5f",
+  measurementId: "G-26C5FQPJSJ"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 /* ─────────────────────────────────────────────────────
    Firebase references (filled after initFirebase())
    ──────────────────────────────────────────────────── */
-let DB          = null;   // Firebase database instance
-let TASKS_REF   = null;   // /tasks
+let DB = null;   // Firebase database instance
+let TASKS_REF = null;   // /tasks
 let DEMANDS_REF = null;   // /demands
-let CHAT_REF    = null;   // /chat
+let CHAT_REF = null;   // /chat
 
 /* ─── Local-only storage keys (not shared) ─────────── */
 const LOCAL_KEYS = {
-  user:  'kwickr_user_v8',
+  user: 'kwickr_user_v8',
   theme: 'kwickr_theme_v8'
 };
 
 /* ─── Global State ───────────────────────────────── */
 const state = {
-  tasks:             [],
-  demands:           {},     // { taskId: [demand,...] }
-  currentUser:       null,
-  userCoords:        null,
-  mapPickedCoords:   null,
-  filter:            { search: '', category: '', radius: 10 },
-  activeChatTaskId:  null,
-  activePayTaskId:   null,
-  activeRateTaskId:  null,
-  activeVerifyTaskId:null,
-  authRole:          'provider',
-  firebaseReady:     false
+  tasks: [],
+  demands: {},     // { taskId: [demand,...] }
+  currentUser: null,
+  userCoords: null,
+  mapPickedCoords: null,
+  filter: { search: '', category: '', radius: 10 },
+  activeChatTaskId: null,
+  activePayTaskId: null,
+  activeRateTaskId: null,
+  activeVerifyTaskId: null,
+  authRole: 'provider',
+  firebaseReady: false
 };
 
 /* ─── Pune base coordinates (demo) ──────────────── */
@@ -56,21 +67,21 @@ const BASE = { lat: 18.5204, lng: 73.8567 };
 
 /* ─── Random job templates ──────────────────────── */
 const JOB_TEMPLATES = [
-  { title:'Fix Leaking Kitchen Tap',  category:'Repair',      budget:[200,600],  desc:'Tap is dripping constantly. Need a plumber ASAP.' },
-  { title:'Grocery Delivery',         category:'Delivery',    budget:[80,200],   desc:'Pick up groceries from D-Mart and deliver to my flat.' },
-  { title:'House Deep Cleaning',      category:'Cleaning',    budget:[500,1500], desc:'3 BHK apartment needs thorough cleaning including bathrooms.' },
-  { title:'Math Tuition – Grade 10',  category:'Tutoring',    budget:[300,700],  desc:'Need a maths tutor for CBSE Grade 10 boards preparation.' },
-  { title:'Furniture Moving Help',    category:'Moving Help', budget:[400,900],  desc:'Shifting sofa and beds to new flat, 2nd floor, no lift.' },
-  { title:'Pharmacy Errand',          category:'Errands',     budget:[60,150],   desc:'Pick up medicines from Apollo Pharmacy and deliver home.' },
-  { title:'AC Service & Gas Refill',  category:'Repair',      budget:[600,1200], desc:'1.5 ton split AC needs servicing and gas top-up.' },
-  { title:'Dog Walking – 1 Hour',     category:'Other',       budget:[100,250],  desc:'Walk my Labrador around the park for 1 hour daily.' },
-  { title:'Office Document Courier',  category:'Delivery',    budget:[100,300],  desc:'Urgent document delivery from Andheri to Bandra office.' },
+  { title: 'Fix Leaking Kitchen Tap', category: 'Repair', budget: [200, 600], desc: 'Tap is dripping constantly. Need a plumber ASAP.' },
+  { title: 'Grocery Delivery', category: 'Delivery', budget: [80, 200], desc: 'Pick up groceries from D-Mart and deliver to my flat.' },
+  { title: 'House Deep Cleaning', category: 'Cleaning', budget: [500, 1500], desc: '3 BHK apartment needs thorough cleaning including bathrooms.' },
+  { title: 'Math Tuition – Grade 10', category: 'Tutoring', budget: [300, 700], desc: 'Need a maths tutor for CBSE Grade 10 boards preparation.' },
+  { title: 'Furniture Moving Help', category: 'Moving Help', budget: [400, 900], desc: 'Shifting sofa and beds to new flat, 2nd floor, no lift.' },
+  { title: 'Pharmacy Errand', category: 'Errands', budget: [60, 150], desc: 'Pick up medicines from Apollo Pharmacy and deliver home.' },
+  { title: 'AC Service & Gas Refill', category: 'Repair', budget: [600, 1200], desc: '1.5 ton split AC needs servicing and gas top-up.' },
+  { title: 'Dog Walking – 1 Hour', category: 'Other', budget: [100, 250], desc: 'Walk my Labrador around the park for 1 hour daily.' },
+  { title: 'Office Document Courier', category: 'Delivery', budget: [100, 300], desc: 'Urgent document delivery from Andheri to Bandra office.' },
 ];
 
 const PUNE_AREAS = [
-  'Koregaon Park','Baner','Hinjewadi','Kothrud','Viman Nagar',
-  'Hadapsar','Aundh','Shivaji Nagar','Deccan','FC Road',
-  'Wakad','Pimpri','Chinchwad','Kalyani Nagar'
+  'Koregaon Park', 'Baner', 'Hinjewadi', 'Kothrud', 'Viman Nagar',
+  'Hadapsar', 'Aundh', 'Shivaji Nagar', 'Deccan', 'FC Road',
+  'Wakad', 'Pimpri', 'Chinchwad', 'Kalyani Nagar'
 ];
 
 /* =====================================================
@@ -79,10 +90,10 @@ const PUNE_AREAS = [
 function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
-    DB          = firebase.database();
-    TASKS_REF   = DB.ref('tasks');
+    DB = firebase.database();
+    TASKS_REF = DB.ref('tasks');
     DEMANDS_REF = DB.ref('demands');
-    CHAT_REF    = DB.ref('chat');
+    CHAT_REF = DB.ref('chat');
     state.firebaseReady = true;
     showToast('🔥 Connected to Kwickr live server!', 'success');
   } catch (err) {
@@ -208,7 +219,7 @@ function saveLocalUser() {
   try {
     if (state.currentUser)
       localStorage.setItem(LOCAL_KEYS.user, JSON.stringify(state.currentUser));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /* =====================================================
@@ -216,12 +227,12 @@ function saveLocalUser() {
 ===================================================== */
 function buildSampleTasks() {
   return [
-    mkTask({ id:'t1', title:'Fix Leaking Tap',    category:'Repair',      budget:350, dist:1.2, desc:'Kitchen tap dripping badly.',        status:'posted',      hoursAhead:2 }),
-    mkTask({ id:'t2', title:'Grocery Delivery',   category:'Delivery',    budget:120, dist:3.5, desc:'Get groceries from Big Bazaar.',     status:'posted',      hoursAhead:3 }),
-    mkTask({ id:'t3', title:'Home Deep Cleaning', category:'Cleaning',    budget:800, dist:2.1, desc:'2BHK deep cleaning with bathrooms.', status:'accepted',    hoursAhead:1, worker:{ name:'Rajesh Kumar', phone:'9876543210', rating:4.7, demandAmount:750, eta:'45 mins' } }),
-    mkTask({ id:'t4', title:'Math Tuition',       category:'Tutoring',    budget:500, dist:4.8, desc:'CBSE Grade 10 boards maths tuition.',status:'in_progress', hoursAhead:-1, worker:{ name:'Priya Sharma', phone:'9123456780', rating:4.9, demandAmount:480, eta:'On site' } }),
-    mkTask({ id:'t5', title:'Furniture Moving',   category:'Moving Help', budget:700, dist:6.3, desc:'Shift sofa and wardrobe to 3rd floor.',status:'completed', hoursAhead:-3, worker:{ name:'Arun Singh',  phone:'9988776655', rating:4.5, demandAmount:650, eta:'Done' } }),
-    mkTask({ id:'t6', title:'Pharmacy Errand',    category:'Errands',     budget:80,  dist:0.8, desc:'Pick up medicines from Apollo.',     status:'posted',      hoursAhead:1 }),
+    mkTask({ id: 't1', title: 'Fix Leaking Tap', category: 'Repair', budget: 350, dist: 1.2, desc: 'Kitchen tap dripping badly.', status: 'posted', hoursAhead: 2 }),
+    mkTask({ id: 't2', title: 'Grocery Delivery', category: 'Delivery', budget: 120, dist: 3.5, desc: 'Get groceries from Big Bazaar.', status: 'posted', hoursAhead: 3 }),
+    mkTask({ id: 't3', title: 'Home Deep Cleaning', category: 'Cleaning', budget: 800, dist: 2.1, desc: '2BHK deep cleaning with bathrooms.', status: 'accepted', hoursAhead: 1, worker: { name: 'Rajesh Kumar', phone: '9876543210', rating: 4.7, demandAmount: 750, eta: '45 mins' } }),
+    mkTask({ id: 't4', title: 'Math Tuition', category: 'Tutoring', budget: 500, dist: 4.8, desc: 'CBSE Grade 10 boards maths tuition.', status: 'in_progress', hoursAhead: -1, worker: { name: 'Priya Sharma', phone: '9123456780', rating: 4.9, demandAmount: 480, eta: 'On site' } }),
+    mkTask({ id: 't5', title: 'Furniture Moving', category: 'Moving Help', budget: 700, dist: 6.3, desc: 'Shift sofa and wardrobe to 3rd floor.', status: 'completed', hoursAhead: -3, worker: { name: 'Arun Singh', phone: '9988776655', rating: 4.5, demandAmount: 650, eta: 'Done' } }),
+    mkTask({ id: 't6', title: 'Pharmacy Errand', category: 'Errands', budget: 80, dist: 0.8, desc: 'Pick up medicines from Apollo.', status: 'posted', hoursAhead: 1 }),
   ];
 }
 
@@ -229,23 +240,23 @@ function mkTask({ id, title, category, budget, dist, desc, status, hoursAhead, w
   const dt = new Date();
   dt.setHours(dt.getHours() + hoursAhead);
   return {
-    id:                   id || 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    id: id || 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     title, category, budget,
-    dateTime:             dt.toISOString(),
-    description:          desc,
-    location:             randomArea(),
-    lat:                  BASE.lat + (Math.random() - 0.5) * 0.06,
-    lng:                  BASE.lng + (Math.random() - 0.5) * 0.06,
-    distance:             dist,
-    providerName:         'Sample Provider',
-    providerPhone:        '9000000000',
+    dateTime: dt.toISOString(),
+    description: desc,
+    location: randomArea(),
+    lat: BASE.lat + (Math.random() - 0.5) * 0.06,
+    lng: BASE.lng + (Math.random() - 0.5) * 0.06,
+    distance: dist,
+    providerName: 'Sample Provider',
+    providerPhone: '9000000000',
     status,
-    assignedWorker:       worker || null,
-    verificationPin:      pin4(),
-    workerVerifiedOnSite: ['in_progress','completed','paid'].includes(status),
-    progressPhotos:       [],
-    rating:               null,
-    createdAt:            Date.now()
+    assignedWorker: worker || null,
+    verificationPin: pin4(),
+    workerVerifiedOnSite: ['in_progress', 'completed', 'paid'].includes(status),
+    progressPhotos: [],
+    rating: null,
+    createdAt: Date.now()
   };
 }
 
@@ -271,7 +282,7 @@ function initThemeToggle() {
   const btn = document.getElementById('themeToggle');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    const cur  = document.documentElement.getAttribute('data-theme');
+    const cur = document.documentElement.getAttribute('data-theme');
     const next = cur === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem(LOCAL_KEYS.theme, next);
@@ -283,7 +294,7 @@ function initThemeToggle() {
    NAVBAR
 ===================================================== */
 function initNavbar() {
-  const ham   = document.getElementById('hamburger');
+  const ham = document.getElementById('hamburger');
   const links = document.getElementById('navLinks');
   if (ham && links) {
     ham.addEventListener('click', () => {
@@ -328,7 +339,7 @@ function switchAppTab(tabId) {
   document.querySelectorAll('.app-tab-content').forEach(c =>
     c.classList.toggle('active', c.id === tabId));
   if (tabId === 'nearbyTasksTab') renderNearbyTasks();
-  if (tabId === 'lifecycleTab')   renderLifecycleBoard();
+  if (tabId === 'lifecycleTab') renderLifecycleBoard();
 }
 
 function goToNearbyTasksBoard() {
@@ -352,15 +363,15 @@ function initMapPicker() {
   const canvas = document.getElementById('mapCanvas');
   if (canvas) {
     canvas.addEventListener('click', (e) => {
-      const rect  = canvas.getBoundingClientRect();
-      const pctX  = (e.clientX - rect.left)  / rect.width;
-      const pctY  = (e.clientY - rect.top)   / rect.height;
-      const lat   = BASE.lat + 0.06 - pctY * 0.12;
-      const lng   = BASE.lng - 0.06 + pctX * 0.12;
+      const rect = canvas.getBoundingClientRect();
+      const pctX = (e.clientX - rect.left) / rect.width;
+      const pctY = (e.clientY - rect.top) / rect.height;
+      const lat = BASE.lat + 0.06 - pctY * 0.12;
+      const lng = BASE.lng - 0.06 + pctX * 0.12;
       state.mapPickedCoords = { lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
       const marker = document.getElementById('mapMarker');
       if (marker) {
-        marker.style.top  = (e.clientY - rect.top)  + 'px';
+        marker.style.top = (e.clientY - rect.top) + 'px';
         marker.style.left = (e.clientX - rect.left) + 'px';
         marker.style.transform = 'translate(-50%,-100%)';
         marker.style.transition = 'none';
@@ -390,7 +401,7 @@ function initMapPicker() {
 }
 
 function simulateMapSearch() {
-  const q   = document.getElementById('mapSearchInput')?.value.trim();
+  const q = document.getElementById('mapSearchInput')?.value.trim();
   if (!q) return;
   const lat = BASE.lat + (Math.random() - 0.5) * 0.1;
   const lng = BASE.lng + (Math.random() - 0.5) * 0.1;
@@ -402,7 +413,7 @@ function simulateMapSearch() {
 
 function confirmMapLocation() {
   if (!state.mapPickedCoords) { showToast('Please click on the map to drop a pin first.', 'error'); return; }
-  const q     = document.getElementById('mapSearchInput')?.value.trim();
+  const q = document.getElementById('mapSearchInput')?.value.trim();
   const locEl = document.getElementById('taskLocation');
   if (locEl) locEl.value = q || `Map: ${state.mapPickedCoords.lat}, ${state.mapPickedCoords.lng}`;
   const latEl = document.getElementById('taskLat');
@@ -417,11 +428,11 @@ function confirmMapLocation() {
    HAVERSINE
 ===================================================== */
 function haversine(lat1, lng1, lat2, lng2) {
-  const R    = 6371;
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a    = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function recalcDistances() {
@@ -437,7 +448,7 @@ function recalcDistances() {
    POST TASK FORM
 ===================================================== */
 function initPostTaskForm() {
-  const form    = document.getElementById('postTaskForm');
+  const form = document.getElementById('postTaskForm');
   const dtInput = document.getElementById('taskDateTime');
   if (!form) return;
   if (dtInput) {
@@ -447,14 +458,14 @@ function initPostTaskForm() {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const title    = val('taskTitle');
+    const title = val('taskTitle');
     const category = val('taskCategory');
-    const desc     = val('taskDescription');
+    const desc = val('taskDescription');
     const location = val('taskLocation');
     const dateTime = val('taskDateTime');
-    const budget   = parseFloat(val('taskBudget'));
-    const lat      = parseFloat(val('taskLat'))  || BASE.lat + rand(-.05,.05);
-    const lng      = parseFloat(val('taskLng'))  || BASE.lng + rand(-.05,.05);
+    const budget = parseFloat(val('taskBudget'));
+    const lat = parseFloat(val('taskLat')) || BASE.lat + rand(-.05, .05);
+    const lng = parseFloat(val('taskLng')) || BASE.lng + rand(-.05, .05);
 
     if (!title || !category || !desc || !location || !dateTime || !budget) {
       showToast('Please fill in all required fields ✱', 'error'); return;
@@ -466,18 +477,18 @@ function initPostTaskForm() {
       : +(rand(0.5, 9)).toFixed(1);
 
     const task = {
-      id:                   'task_' + Date.now(),
+      id: 'task_' + Date.now(),
       title, category, budget, dateTime, description: desc, location, lat, lng,
-      distance:             dist,
-      providerName:         state.currentUser?.name  || 'Anonymous',
-      providerPhone:        state.currentUser?.phone || '',
-      status:               'posted',
-      assignedWorker:       null,
-      verificationPin:      pin4(),
+      distance: dist,
+      providerName: state.currentUser?.name || 'Anonymous',
+      providerPhone: state.currentUser?.phone || '',
+      status: 'posted',
+      assignedWorker: null,
+      verificationPin: pin4(),
       workerVerifiedOnSite: false,
-      progressPhotos:       [],
-      rating:               null,
-      createdAt:            Date.now()
+      progressPhotos: [],
+      rating: null,
+      createdAt: Date.now()
     };
 
     /* Push to Firebase → real-time listener will update UI */
@@ -499,7 +510,7 @@ function initPostTaskForm() {
   });
 }
 
-function val(id)    { return (document.getElementById(id)?.value || '').trim(); }
+function val(id) { return (document.getElementById(id)?.value || '').trim(); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 
 /* =====================================================
@@ -536,7 +547,7 @@ function renderNearbyTasks() {
   if (!container) return;
   const { search, category, radius } = state.filter;
   const list = state.tasks.filter(t => {
-    const mS = !search   || t.title.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase());
+    const mS = !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase());
     const mC = !category || t.category === category;
     const mR = t.distance == null || t.distance <= radius;
     return mS && mC && mR;
@@ -602,14 +613,14 @@ function buildTaskCard(t) {
 }
 
 function addRandomJob() {
-  const tpl    = JOB_TEMPLATES[Math.floor(Math.random() * JOB_TEMPLATES.length)];
+  const tpl = JOB_TEMPLATES[Math.floor(Math.random() * JOB_TEMPLATES.length)];
   const [mn, mx] = tpl.budget;
   const budget = mn + Math.floor(Math.random() * (mx - mn));
-  const lat    = BASE.lat + rand(-.09, .09);
-  const lng    = BASE.lng + rand(-.09, .09);
-  const dist   = state.userCoords ? +haversine(state.userCoords.lat, state.userCoords.lng, lat, lng).toFixed(1) : +rand(.5, 9).toFixed(1);
-  const dt     = new Date(); dt.setMinutes(dt.getMinutes() + 30 + Math.floor(Math.random() * 180));
-  const task   = {
+  const lat = BASE.lat + rand(-.09, .09);
+  const lng = BASE.lng + rand(-.09, .09);
+  const dist = state.userCoords ? +haversine(state.userCoords.lat, state.userCoords.lng, lat, lng).toFixed(1) : +rand(.5, 9).toFixed(1);
+  const dt = new Date(); dt.setMinutes(dt.getMinutes() + 30 + Math.floor(Math.random() * 180));
+  const task = {
     id: 'r_' + Date.now(), title: tpl.title, category: tpl.category, budget,
     dateTime: dt.toISOString(), description: tpl.desc, location: randomArea(),
     lat, lng, distance: dist, providerName: 'Demo Provider', providerPhone: '9000000001',
@@ -639,7 +650,7 @@ function resetDemoJobs() {
     CHAT_REF.set({});
     showToast('Jobs reset to default samples ↺', 'info');
   } else {
-    state.tasks   = samples;
+    state.tasks = samples;
     state.demands = {};
     renderNearbyTasks();
     renderLifecycleBoard();
@@ -669,12 +680,12 @@ function renderLifecycleBoard() {
 }
 
 function buildLifecycleCard(t) {
-  const STEPS = ['Posted','Accepted','In Progress','Completed'];
-  const IDX   = { posted:0, accepted:1, in_progress:2, completed:3, paid:3 };
-  const cur   = IDX[t.status] ?? 0;
+  const STEPS = ['Posted', 'Accepted', 'In Progress', 'Completed'];
+  const IDX = { posted: 0, accepted: 1, in_progress: 2, completed: 3, paid: 3 };
+  const cur = IDX[t.status] ?? 0;
 
   const tracker = STEPS.map((s, i) => {
-    const cls  = i < cur ? 'done' : i === cur ? 'active' : '';
+    const cls = i < cur ? 'done' : i === cur ? 'active' : '';
     const icon = i < cur ? '✓' : i + 1;
     const line = i < STEPS.length - 1 ? `<div class="progress-connector ${i < cur ? 'done' : ''}"></div>` : '';
     return `<div class="progress-step ${cls}"><div class="dot">${icon}</div><span>${s}</span></div>${line}`;
@@ -736,15 +747,15 @@ function markComplete(taskId) {
 function routeAction(action, taskId) {
   const t = findTask(taskId);
   switch (action) {
-    case 'demand':       openDemandModal(taskId); break;
-    case 'viewWorker':   openWorkerInfoModal(taskId); break;
-    case 'showQr':       openWorkerQrModal(taskId); break;
-    case 'verifyQr':     openProviderVerifyModal(taskId); break;
-    case 'chat':         openChatModal(taskId); break;
-    case 'gmap':         if (t) openGoogleMaps(t); break;
-    case 'uploadPhoto':  openPhotoUploadModal(taskId); break;
-    case 'pay':          openPaymentModal(taskId); break;
-    case 'rate':         openRatingModal(taskId); break;
+    case 'demand': openDemandModal(taskId); break;
+    case 'viewWorker': openWorkerInfoModal(taskId); break;
+    case 'showQr': openWorkerQrModal(taskId); break;
+    case 'verifyQr': openProviderVerifyModal(taskId); break;
+    case 'chat': openChatModal(taskId); break;
+    case 'gmap': if (t) openGoogleMaps(t); break;
+    case 'uploadPhoto': openPhotoUploadModal(taskId); break;
+    case 'pay': openPaymentModal(taskId); break;
+    case 'rate': openRatingModal(taskId); break;
     case 'markComplete': markComplete(taskId); break;
   }
 }
@@ -779,12 +790,12 @@ document.addEventListener('click', (e) => {
 function initModalListeners() {
   /* ── Demand submit (worker sends request to provider) ── */
   document.getElementById('submitDemandBtn')?.addEventListener('click', () => {
-    const btn    = document.getElementById('submitDemandBtn');
+    const btn = document.getElementById('submitDemandBtn');
     const taskId = btn.dataset.taskid;
-    const name   = val('demandName');
-    const phone  = val('demandPhone');
+    const name = val('demandName');
+    const phone = val('demandPhone');
     const amount = parseFloat(val('demandAmount'));
-    const eta    = val('demandEta');
+    const eta = val('demandEta');
     if (!name || !phone || !amount || !eta) { showToast('Please fill all fields.', 'error'); return; }
     const t = findTask(taskId);
     if (t) {
@@ -802,9 +813,9 @@ function initModalListeners() {
 
   /* ── Accept worker (provider side) ── */
   document.getElementById('confirmAcceptBtn')?.addEventListener('click', () => {
-    const btn    = document.getElementById('confirmAcceptBtn');
+    const btn = document.getElementById('confirmAcceptBtn');
     const taskId = btn.dataset.taskid;
-    const t      = findTask(taskId);
+    const t = findTask(taskId);
     if (t) { t.status = 'accepted'; saveTask(t); }
     closeModal('workerInfoModal');
     showToast('Worker accepted! They\'ll arrive at your location. ✅', 'success');
@@ -812,11 +823,11 @@ function initModalListeners() {
 
   /* ── Photo submit ── */
   document.getElementById('submitPhotoBtn')?.addEventListener('click', () => {
-    const btn    = document.getElementById('submitPhotoBtn');
+    const btn = document.getElementById('submitPhotoBtn');
     const taskId = btn.dataset.taskid;
-    const file   = document.getElementById('progressPhotoInput')?.files?.[0];
-    const pct    = document.getElementById('progressPct')?.value || 50;
-    const cap    = val('progressCaption') || 'Work in progress';
+    const file = document.getElementById('progressPhotoInput')?.files?.[0];
+    const pct = document.getElementById('progressPct')?.value || 50;
+    const cap = val('progressCaption') || 'Work in progress';
     if (!file) { showToast('Please select a photo first.', 'error'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -848,10 +859,10 @@ function initModalListeners() {
 
   /* ── Payment confirm ── */
   document.getElementById('confirmPayBtn')?.addEventListener('click', () => {
-    const btn    = document.getElementById('confirmPayBtn');
+    const btn = document.getElementById('confirmPayBtn');
     const taskId = btn.dataset.taskid;
     const method = document.querySelector('input[name="payMethod"]:checked')?.value || 'upi';
-    const t      = findTask(taskId);
+    const t = findTask(taskId);
     if (t) { t.status = 'paid'; saveTask(t); }
     closeModal('paymentModal');
     showToast(`Payment of ₹${t?.budget || ''} via ${method.toUpperCase()} successful! 💳`, 'success');
@@ -865,10 +876,10 @@ function initModalListeners() {
 
   /* ── PIN verify ── */
   document.getElementById('verifyPinBtn')?.addEventListener('click', () => {
-    const btn     = document.getElementById('verifyPinBtn');
-    const taskId  = btn.dataset.taskid;
+    const btn = document.getElementById('verifyPinBtn');
+    const taskId = btn.dataset.taskid;
     const entered = val('pinVerifyInput');
-    const t       = findTask(taskId);
+    const t = findTask(taskId);
     if (!t) return;
     if (entered === t.verificationPin) {
       confirmWorkerOnSite(taskId);
@@ -904,7 +915,7 @@ function openDemandModal(taskId) {
     if (n) n.value = state.currentUser.name;
     if (p) p.value = state.currentUser.phone;
   }
-  ['demandAmount','demandEta','demandMessage'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['demandAmount', 'demandEta', 'demandMessage'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   openModal('demandModal');
 }
 
@@ -914,7 +925,7 @@ function openDemandModal(taskId) {
 function openWorkerInfoModal(taskId) {
   const t = findTask(taskId);
   if (!t?.assignedWorker) return;
-  const w    = t.assignedWorker;
+  const w = t.assignedWorker;
   const body = document.getElementById('workerInfoBody');
   if (body) {
     body.innerHTML = `
@@ -956,7 +967,7 @@ function openPhotoUploadModal(taskId) {
 }
 
 function renderUploadedPhotos(taskId) {
-  const t    = findTask(taskId);
+  const t = findTask(taskId);
   const list = document.getElementById('uploadedPhotosList');
   if (!list || !t) return;
   list.innerHTML = !t.progressPhotos.length
@@ -1003,7 +1014,7 @@ function openRatingModal(taskId) {
 }
 
 function wireStarRating() {
-  const stars  = document.querySelectorAll('#starRating .star');
+  const stars = document.querySelectorAll('#starRating .star');
   let selected = 0;
   const oldBtn = document.getElementById('submitRatingBtn');
   const newBtn = oldBtn.cloneNode(true);
@@ -1012,14 +1023,14 @@ function wireStarRating() {
   stars.forEach(star => {
     star.addEventListener('mouseenter', () => {
       const v = parseInt(star.dataset.val);
-      stars.forEach((s,i) => s.classList.toggle('active', i < v));
+      stars.forEach((s, i) => s.classList.toggle('active', i < v));
     });
     star.addEventListener('mouseleave', () => {
-      stars.forEach((s,i) => s.classList.toggle('active', i < selected));
+      stars.forEach((s, i) => s.classList.toggle('active', i < selected));
     });
     star.addEventListener('click', () => {
       selected = parseInt(star.dataset.val);
-      stars.forEach((s,i) => s.classList.toggle('active', i < selected));
+      stars.forEach((s, i) => s.classList.toggle('active', i < selected));
     });
   });
 
@@ -1066,7 +1077,7 @@ function openChatModal(taskId) {
     /* Seed greeting if thread is empty */
     CHAT_REF.child(taskId).once('value', (snap) => {
       if (!snap.exists()) {
-        const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const greeting1 = { text: `Hi! I'm interested in "${t.title}". I'm available today.`, sent: false, time: now };
         const greeting2 = { text: `Great! Location: ${t.location}. Budget ₹${t.budget}. When can you come?`, sent: true, time: now };
         CHAT_REF.child(taskId).push(greeting1);
@@ -1081,7 +1092,7 @@ function openChatModal(taskId) {
       history = saved ? JSON.parse(saved) : [];
     } catch (e) { history = []; }
     if (!history.length) {
-      const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       history = [
         { text: `Hi! I'm interested in "${t.title}". I'm available today.`, sent: false, time: now },
         { text: `Great! Location: ${t.location}. Budget ₹${t.budget}. When can you come?`, sent: true, time: now },
@@ -1105,35 +1116,35 @@ function drawChatMessages(messages) {
 
 function wireChatInput(taskId, history) {
   const oldInput = document.getElementById('chatInput');
-  const oldBtn   = document.getElementById('chatSendBtn');
+  const oldBtn = document.getElementById('chatSendBtn');
   const newInput = oldInput.cloneNode(true);
-  const newBtn   = oldBtn.cloneNode(true);
+  const newBtn = oldBtn.cloneNode(true);
   oldInput.parentNode.replaceChild(newInput, oldInput);
   oldBtn.parentNode.replaceChild(newBtn, oldBtn);
 
   function send() {
     const text = newInput.value.trim();
     if (!text) return;
-    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    const msg  = { text, sent: true, time };
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const msg = { text, sent: true, time };
     newInput.value = '';
 
     if (state.firebaseReady) {
       pushChatMessage(taskId, msg);
       /* Auto-reply from "worker" side after a short delay */
       setTimeout(() => {
-        const replies = ['Got it! 👍','On my way! 🚗','Understood, be there shortly.','Reaching in ~15 mins 📍','Done with this step ✅','Need 10 more minutes ⏰'];
-        pushChatMessage(taskId, { text: replies[Math.floor(Math.random() * replies.length)], sent: false, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+        const replies = ['Got it! 👍', 'On my way! 🚗', 'Understood, be there shortly.', 'Reaching in ~15 mins 📍', 'Done with this step ✅', 'Need 10 more minutes ⏰'];
+        pushChatMessage(taskId, { text: replies[Math.floor(Math.random() * replies.length)], sent: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
       }, 1000 + Math.random() * 1500);
     } else {
       history.push(msg);
       drawChatMessages(history);
-      try { localStorage.setItem('kwickr_chat_v8_' + taskId, JSON.stringify(history)); } catch(e) {}
+      try { localStorage.setItem('kwickr_chat_v8_' + taskId, JSON.stringify(history)); } catch (e) { }
       setTimeout(() => {
-        const replies = ['Got it! 👍','On my way! 🚗','Understood, be there shortly.','Reaching in ~15 mins 📍','Done with this step ✅'];
-        const reply   = { text: replies[Math.floor(Math.random() * replies.length)], sent: false, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) };
+        const replies = ['Got it! 👍', 'On my way! 🚗', 'Understood, be there shortly.', 'Reaching in ~15 mins 📍', 'Done with this step ✅'];
+        const reply = { text: replies[Math.floor(Math.random() * replies.length)], sent: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
         history.push(reply);
-        try { localStorage.setItem('kwickr_chat_v8_' + taskId, JSON.stringify(history)); } catch(e) {}
+        try { localStorage.setItem('kwickr_chat_v8_' + taskId, JSON.stringify(history)); } catch (e) { }
         drawChatMessages(history);
       }, 1000 + Math.random() * 1500);
     }
@@ -1154,9 +1165,9 @@ function simulateCall() {
 }
 
 function openWhatsApp() {
-  const t     = findTask(state.activeChatTaskId);
+  const t = findTask(state.activeChatTaskId);
   const phone = t?.assignedWorker?.phone || '9000000000';
-  const msg   = encodeURIComponent(`Hi! I found you on Kwickr for the task: "${t?.title || ''}". Please confirm availability.`);
+  const msg = encodeURIComponent(`Hi! I found you on Kwickr for the task: "${t?.title || ''}". Please confirm availability.`);
   window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
 }
 
@@ -1175,20 +1186,20 @@ function openWorkerQrModal(taskId) {
   const t = findTask(taskId); if (!t) return;
   const workerName = t.assignedWorker?.name || state.currentUser?.name || 'Worker';
   const nameEl = document.getElementById('qrWorkerName');
-  const pinEl  = document.getElementById('qrPinDisplay');
+  const pinEl = document.getElementById('qrPinDisplay');
   const metaEl = document.getElementById('qrTaskMeta');
   if (nameEl) nameEl.textContent = workerName;
-  if (pinEl)  pinEl.textContent  = t.verificationPin;
-  if (metaEl) metaEl.innerHTML   = `📋 ${esc(t.title)}<br/>📍 ${esc(t.location)}<br/>💰 ₹${t.budget}`;
+  if (pinEl) pinEl.textContent = t.verificationPin;
+  if (metaEl) metaEl.innerHTML = `📋 ${esc(t.title)}<br/>📍 ${esc(t.location)}<br/>💰 ₹${t.budget}`;
   const canvas = document.getElementById('workerQrCanvas');
   if (canvas) drawKwickrQr(canvas, `KWICKR|${taskId}|${t.verificationPin}|${workerName}|${t.title}`);
   openModal('workerQrModal');
 }
 
 function drawKwickrQr(canvas, data) {
-  const ctx  = canvas.getContext('2d');
-  const S    = canvas.width;
-  const MOD  = 25;
+  const ctx = canvas.getContext('2d');
+  const S = canvas.width;
+  const MOD = 25;
   const cell = S / MOD;
 
   ctx.fillStyle = '#FFFFFF';
@@ -1207,12 +1218,12 @@ function drawKwickrQr(canvas, data) {
 
   function finder(sc, sr) {
     for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
-      if (r === 0 || r === 6 || c === 0 || c === 6) fillCell(sc+c, sr+r, '#000');
+      if (r === 0 || r === 6 || c === 0 || c === 6) fillCell(sc + c, sr + r, '#000');
     }
     for (let r = 1; r < 6; r++) for (let c = 1; c < 6; c++) {
-      if (r === 1 || r === 5 || c === 1 || c === 5) fillCell(sc+c, sr+r, '#FFF');
+      if (r === 1 || r === 5 || c === 1 || c === 5) fillCell(sc + c, sr + r, '#FFF');
     }
-    for (let r = 2; r < 5; r++) for (let c = 2; c < 5; c++) fillCell(sc+c, sr+r, '#000');
+    for (let r = 2; r < 5; r++) for (let c = 2; c < 5; c++) fillCell(sc + c, sr + r, '#000');
   }
 
   finder(0, 0); finder(MOD - 7, 0); finder(0, MOD - 7);
@@ -1223,7 +1234,7 @@ function drawKwickrQr(canvas, data) {
 
   const reserved = new Set();
   for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
-    reserved.add(`${c},${r}`); reserved.add(`${MOD-1-c},${r}`); reserved.add(`${c},${MOD-1-r}`);
+    reserved.add(`${c},${r}`); reserved.add(`${MOD - 1 - c},${r}`); reserved.add(`${c},${MOD - 1 - r}`);
   }
   for (let i = 6; i < MOD; i++) { reserved.add(`${i},6`); reserved.add(`6,${i}`); }
 
@@ -1270,9 +1281,9 @@ function openAuthModal(role) {
   state.authRole = role || 'provider';
   setAuthRole(state.authRole);
   document.getElementById('authPhoneForm').style.display = 'block';
-  document.getElementById('authOtpForm').style.display   = 'none';
-  document.getElementById('authKycForm').style.display   = 'none';
-  ['authName','authPhone','authPassword','authOtp'].forEach(id => {
+  document.getElementById('authOtpForm').style.display = 'none';
+  document.getElementById('authKycForm').style.display = 'none';
+  ['authName', 'authPhone', 'authPassword', 'authOtp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   removeSelfie(); removeId();
@@ -1283,7 +1294,7 @@ function openAuthModal(role) {
 function setAuthRole(role) {
   state.authRole = role;
   document.getElementById('tabRoleProvider')?.classList.toggle('active', role === 'provider');
-  document.getElementById('tabRoleWorker')?.classList.toggle('active',   role === 'worker');
+  document.getElementById('tabRoleWorker')?.classList.toggle('active', role === 'worker');
   const titleEl = document.getElementById('authModalTitle');
   if (titleEl) titleEl.textContent = role === 'provider' ? 'Join as Job Provider' : 'Join as Freelancer';
 }
@@ -1300,15 +1311,15 @@ function initAuthForms() {
   /* ── Step 1 ── */
   document.getElementById('authPhoneForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name  = val('authName');
+    const name = val('authName');
     const phone = val('authPhone');
-    const pass  = val('authPassword');
-    if (!name || !phone || !pass)  { showToast('Please fill all fields.', 'error'); return; }
-    if (pass.length < 6)           { showToast('Password must be at least 6 characters.', 'error'); return; }
-    document.getElementById('authPhoneForm')._name  = name;
+    const pass = val('authPassword');
+    if (!name || !phone || !pass) { showToast('Please fill all fields.', 'error'); return; }
+    if (pass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+    document.getElementById('authPhoneForm')._name = name;
     document.getElementById('authPhoneForm')._phone = phone;
     document.getElementById('authPhoneForm').style.display = 'none';
-    document.getElementById('authOtpForm').style.display   = 'block';
+    document.getElementById('authOtpForm').style.display = 'block';
     showToast('OTP sent! Enter any 4 digits (demo).', 'info');
   });
 
@@ -1325,12 +1336,12 @@ function initAuthForms() {
   /* ── Step 3: KYC ── */
   document.getElementById('authKycForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const idType  = document.getElementById('idType')?.value;
+    const idType = document.getElementById('idType')?.value;
     const selfieF = document.getElementById('selfieInput')?.files?.[0];
-    const idF     = document.getElementById('idInput')?.files?.[0];
-    if (!idType)  { showToast('Please select your ID type.', 'error'); return; }
+    const idF = document.getElementById('idInput')?.files?.[0];
+    if (!idType) { showToast('Please select your ID type.', 'error'); return; }
     if (!selfieF) { showToast('Please take or upload a selfie.', 'error'); return; }
-    if (!idF)     { showToast('Please upload your ID proof.', 'error'); return; }
+    if (!idF) { showToast('Please upload your ID proof.', 'error'); return; }
     showToast('⏳ Uploading verification documents…', 'info');
     setTimeout(() => {
       showToast('✅ Documents submitted! You\'ll be verified within 24 hours.', 'success');
@@ -1344,7 +1355,7 @@ function initAuthForms() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      document.getElementById('selfiePreviewImg').src        = ev.target.result;
+      document.getElementById('selfiePreviewImg').src = ev.target.result;
       document.getElementById('selfiePreview').style.display = 'flex';
       document.querySelector('#selfieUploadArea .kyc-upload-label').style.display = 'none';
     };
@@ -1353,21 +1364,21 @@ function initAuthForms() {
 
   /* ID proof preview */
   document.getElementById('idInput')?.addEventListener('change', () => {
-    const file       = document.getElementById('idInput').files[0];
+    const file = document.getElementById('idInput').files[0];
     if (!file) return;
-    const preview    = document.getElementById('idPreview');
+    const preview = document.getElementById('idPreview');
     const previewImg = document.getElementById('idPreviewImg');
-    const pdfBadge   = document.getElementById('idPreviewPdf');
-    const label      = document.querySelector('#idUploadArea .kyc-upload-label');
+    const pdfBadge = document.getElementById('idPreviewPdf');
+    const label = document.querySelector('#idUploadArea .kyc-upload-label');
     if (file.type === 'application/pdf') {
       previewImg.style.display = 'none';
-      pdfBadge.style.display   = 'block';
+      pdfBadge.style.display = 'block';
     } else {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        previewImg.src           = ev.target.result;
+        previewImg.src = ev.target.result;
         previewImg.style.display = 'block';
-        pdfBadge.style.display   = 'none';
+        pdfBadge.style.display = 'none';
       };
       reader.readAsDataURL(file);
     }
@@ -1377,26 +1388,26 @@ function initAuthForms() {
 }
 
 function removeSelfie() {
-  const inp   = document.getElementById('selfieInput');
-  const prev  = document.getElementById('selfiePreview');
+  const inp = document.getElementById('selfieInput');
+  const prev = document.getElementById('selfiePreview');
   const label = document.querySelector('#selfieUploadArea .kyc-upload-label');
-  if (inp)   inp.value = '';
-  if (prev)  prev.style.display  = 'none';
+  if (inp) inp.value = '';
+  if (prev) prev.style.display = 'none';
   if (label) label.style.display = 'flex';
 }
 
 function removeId() {
-  const inp   = document.getElementById('idInput');
-  const prev  = document.getElementById('idPreview');
+  const inp = document.getElementById('idInput');
+  const prev = document.getElementById('idPreview');
   const label = document.querySelector('#idUploadArea .kyc-upload-label');
-  if (inp)   inp.value = '';
-  if (prev)  prev.style.display  = 'none';
+  if (inp) inp.value = '';
+  if (prev) prev.style.display = 'none';
   if (label) label.style.display = 'flex';
 }
 
 function finishAuth() {
-  const form  = document.getElementById('authPhoneForm');
-  const name  = form?._name  || val('authName')  || 'User';
+  const form = document.getElementById('authPhoneForm');
+  const name = form?._name || val('authName') || 'User';
   const phone = form?._phone || val('authPhone') || '';
   state.currentUser = { name, phone, role: state.authRole, verified: false, joinedAt: Date.now() };
   saveLocalUser();
@@ -1413,8 +1424,8 @@ function initStatsCounter() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
-      const el      = entry.target;
-      const target  = parseInt(el.dataset.target);
+      const el = entry.target;
+      const target = parseInt(el.dataset.target);
       const decimal = el.dataset.decimal === '1';
       const dur = 1800, steps = 60;
       let cur = 0;
@@ -1435,10 +1446,10 @@ function initStatsCounter() {
    TESTIMONIALS SLIDER
 ===================================================== */
 function initTestimonialsSlider() {
-  const track   = document.getElementById('sliderTrack');
+  const track = document.getElementById('sliderTrack');
   const prevBtn = document.getElementById('sliderPrev');
   const nextBtn = document.getElementById('sliderNext');
-  const dotsEl  = document.getElementById('sliderDots');
+  const dotsEl = document.getElementById('sliderDots');
   if (!track) return;
 
   const cards = track.querySelectorAll('.testimonial-card');
@@ -1462,7 +1473,7 @@ function initTestimonialsSlider() {
   nextBtn?.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
 
   function startAuto() { autoPlay = setInterval(() => goTo(current + 1), 4500); }
-  function resetAuto()  { clearInterval(autoPlay); startAuto(); }
+  function resetAuto() { clearInterval(autoPlay); startAuto(); }
   startAuto();
 }
 
@@ -1485,9 +1496,9 @@ function initFaqAccordion() {
 function initContactForm() {
   document.getElementById('contactForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name  = val('contactName');
+    const name = val('contactName');
     const email = val('contactEmail');
-    const msg   = val('contactMessage');
+    const msg = val('contactMessage');
     if (!name || !email || !msg) { showToast('Please fill all fields.', 'error'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address.', 'error'); return; }
     showToast(`Thanks ${name}! We'll get back to you soon. ✉️`, 'success');
@@ -1516,11 +1527,11 @@ function findTask(id) { return state.tasks.find(t => t.id === id) || null; }
 
 function statusBadge(status) {
   const map = {
-    posted:      '<span class="badge badge-posted">🔵 Posted</span>',
-    accepted:    '<span class="badge badge-accepted">✅ Accepted</span>',
+    posted: '<span class="badge badge-posted">🔵 Posted</span>',
+    accepted: '<span class="badge badge-accepted">✅ Accepted</span>',
     in_progress: '<span class="badge badge-progress">🔄 In Progress</span>',
-    completed:   '<span class="badge badge-completed">🎉 Completed</span>',
-    paid:        '<span class="badge badge-paid">💳 Paid</span>',
+    completed: '<span class="badge badge-completed">🎉 Completed</span>',
+    paid: '<span class="badge badge-paid">💳 Paid</span>',
   };
   return map[status] || '';
 }
@@ -1533,7 +1544,7 @@ function showToast(message, type = 'default') {
   toast.textContent = message;
   container.appendChild(toast);
   setTimeout(() => {
-    toast.style.opacity   = '0';
+    toast.style.opacity = '0';
     toast.style.transform = 'translateX(120%)';
     toast.style.transition = 'all .4s ease';
     setTimeout(() => toast.remove(), 400);
@@ -1542,27 +1553,27 @@ function showToast(message, type = 'default') {
 
 function esc(str) {
   if (typeof str !== 'string') return String(str ?? '');
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 /* ── Expose globals for inline onclick attributes ── */
-window.openAuthModal          = openAuthModal;
-window.setAuthRole            = setAuthRole;
-window.switchToLogin          = switchToLogin;
-window.skipKyc                = skipKyc;
-window.removeSelfie           = removeSelfie;
-window.removeId               = removeId;
-window.openModal              = openModal;
-window.closeModal             = closeModal;
-window.goToNearbyTasksBoard   = goToNearbyTasksBoard;
-window.goToPostTaskBoard      = goToPostTaskBoard;
-window.renderNearbyTasks      = renderNearbyTasks;
-window.addRandomJob           = addRandomJob;
-window.resetDemoJobs          = resetDemoJobs;
-window.switchAppTab           = switchAppTab;
-window.simulateMapSearch      = simulateMapSearch;
-window.confirmMapLocation     = confirmMapLocation;
-window.sendChatChip           = sendChatChip;
-window.simulateCall           = simulateCall;
-window.openWhatsApp           = openWhatsApp;
-window.state                  = state;
+window.openAuthModal = openAuthModal;
+window.setAuthRole = setAuthRole;
+window.switchToLogin = switchToLogin;
+window.skipKyc = skipKyc;
+window.removeSelfie = removeSelfie;
+window.removeId = removeId;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.goToNearbyTasksBoard = goToNearbyTasksBoard;
+window.goToPostTaskBoard = goToPostTaskBoard;
+window.renderNearbyTasks = renderNearbyTasks;
+window.addRandomJob = addRandomJob;
+window.resetDemoJobs = resetDemoJobs;
+window.switchAppTab = switchAppTab;
+window.simulateMapSearch = simulateMapSearch;
+window.confirmMapLocation = confirmMapLocation;
+window.sendChatChip = sendChatChip;
+window.simulateCall = simulateCall;
+window.openWhatsApp = openWhatsApp;
+window.state = state;
